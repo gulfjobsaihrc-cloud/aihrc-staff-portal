@@ -256,9 +256,10 @@ async function loadCandidates(){
   $("candidateRows").innerHTML="<tr><td colspan='7'>Loading candidates...</td></tr>";
 
   try{
-    const {data,error}=await db.from("candidates")
-      .select("*")
-      .order("created_at",{ascending:false});
+   const {data,error}=await db.from("candidates")
+  .select("*")
+  .order("created_at",{ascending:false})
+  .limit(5);
 
     if(error) throw error;
 
