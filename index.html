@@ -5,551 +5,480 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AIHRC Staff Portal</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f4f7f5;font:15px Arial;color:#20352a}
-header{background:#124b35;color:white;padding:20px;font-weight:bold}
-header small{display:block;margin-top:5px;color:#e6e9df}
-main{max-width:1200px;margin:24px auto;padding:0 15px}
-.card{background:white;border:1px solid #dce5df;border-radius:12px;padding:20px;margin:15px 0}
-h2{color:#124b35;margin-top:5px}
-input,select,textarea{padding:11px;border:1px solid #ccd8d0;border-radius:6px;width:100%;margin:6px 0 12px;font-size:14px}
-button{padding:10px 15px;background:#1d684a;color:white;border:0;border-radius:6px;cursor:pointer;margin:3px}
+body{margin:0;background:#f3f6f4;font-family:Arial,sans-serif;color:#26352c}
+header{background:#124b35;color:white;padding:17px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+header h2{margin:0;font-size:20px}
+main{max-width:1250px;margin:22px auto;padding:0 14px}
+.card{background:white;border:1px solid #dce5df;border-radius:12px;padding:20px;margin-bottom:18px}
+h2,h3{color:#124b35}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cbd7ce;border-radius:6px;margin:6px 0 12px;font-size:14px}
+textarea{min-height:75px}
+button{background:#176844;color:white;border:0;padding:10px 15px;border-radius:6px;cursor:pointer;margin:3px;font-weight:600}
 button:hover{background:#124b35}
 button.secondary{background:#64756b}
 button.danger{background:#b83232}
-.hide{display:none!important}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:850px}
-td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}
+button.light{background:#e7f0e9;color:#124b35}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar input{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse;min-width:750px}
+th,td{padding:11px;border-bottom:1px solid #e3e9e5;text-align:left;font-size:13px}
 th{background:#edf4ef;color:#124b35}
-.muted{color:#65756b;font-size:13px}
-#msg{background:#fff8df;border-color:#e6d28a;color:#594a15}
-.actions button{font-size:12px;padding:7px}
-@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}main{padding:0 9px}.card{padding:14px}}
-@media(max-width:430px){.grid{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto}
+.hidden{display:none!important}
+#loginBox{max-width:420px;margin:9vh auto}
+.status{font-weight:bold;color:#176844}
+.small{font-size:12px;color:#68786d}
+#message{padding:10px;border-radius:6px;margin:10px 0;display:none}
+#message.ok{display:block;background:#e4f4e9;color:#145c31}
+#message.err{display:block;background:#ffebeb;color:#9b2020}
+#message.warn{display:block;background:#fff4dc;color:#805600}
+.docrow{padding:10px;border-bottom:1px solid #e5eae6;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+@media(max-width:750px){.grid{grid-template-columns:1fr}header h2{font-size:17px}main{margin:12px auto}.card{padding:14px}}
 </style>
 </head>
-
 <body>
 
 <header>
-AIHRC STAFF PORTAL
-<small>AMAN INTERNATIONAL HR CONSULTANT</small>
+  <h2>AMAN INTERNATIONAL HR CONSULTANT</h2>
+  <div>
+    <span id="userLabel"></span>
+    <button id="logoutBtn" class="secondary hidden" onclick="logout()">Logout</button>
+  </div>
 </header>
 
 <main>
+  <div id="loginBox" class="card">
+    <h2>Staff Portal Login</h2>
+    <p class="small">AIHRC Candidate Management System</p>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="Enter login email">
+    <label>Password</label>
+    <input type="password" id="loginPassword" placeholder="Enter password">
+    <button style="width:100%" onclick="login()">Login</button>
+    <div id="loginMessage" class="small"></div>
+  </div>
 
-<div id="msg" class="card hide"></div>
+  <div id="app" class="hidden">
+    <div id="message"></div>
 
-<section id="login" class="card" style="max-width:430px;margin:55px auto">
-<h2>Staff Login</h2>
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0">Candidate Tracker</h2>
+        <span style="flex:1"></span>
+        <button onclick="newCandidate()">+ Add Candidate</button>
+        <button class="secondary" onclick="loadCandidates()">Refresh</button>
+      </div>
+      <p class="small">Manage candidate records and recruitment progress.</p>
+      <input id="searchBox" placeholder="Search name, mobile, passport, position or candidate ID..." oninput="renderCandidates()">
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate ID</th><th>Name</th><th>Mobile</th>
+              <th>Position</th><th>Country</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="candidateRows">
+            <tr><td colspan="7">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-<label>Email</label>
-<input id="email" type="email" placeholder="Enter your email">
+    <div class="card hidden" id="candidateFormCard">
+      <h2 id="formHeading">Add Candidate</h2>
+      <form id="candidateForm" onsubmit="saveCandidate(event)">
+        <input type="hidden" id="candidate_id">
+        <div class="grid">
+          <div><label>Candidate Name *</label><input id="name" required></div>
+          <div><label>Mobile</label><input id="mobile"></div>
+          <div><label>Email</label><input id="email" type="email"></div>
+          <div><label>Passport Number</label><input id="passport_number"></div>
+          <div><label>Passport Expiry</label><input id="passport_expiry" type="date"></div>
+          <div><label>Date of Birth</label><input id="dob" type="date"></div>
+          <div><label>Country</label><input id="country"></div>
+          <div><label>Position</label><input id="position"></div>
+          <div><label>Indian Experience (Years)</label><input id="indian_experience"></div>
+          <div><label>Overseas Experience (Years)</label><input id="overseas_experience"></div>
+          <div><label>Staff</label><input id="staff"></div>
+          <div><label>Location</label><input id="location"></div>
+          <div>
+            <label>Status</label>
+            <select id="status">
+              <option value="REGISTERED">REGISTERED</option>
+              <option value="SHORTLISTED">SHORTLISTED</option>
+              <option value="SELECTED">SELECTED</option>
+              <option value="MEDICAL">MEDICAL</option>
+              <option value="VISA PROCESSING">VISA PROCESSING</option>
+              <option value="VISA APPROVED">VISA APPROVED</option>
+              <option value="TICKET PENDING">TICKET PENDING</option>
+              <option value="TICKET ISSUED">TICKET ISSUED</option>
+              <option value="REJECTED">REJECTED</option>
+              <option value="DEPLOYED">DEPLOYED</option>
+            </select>
+          </div>
+          <div><label>Registration Type</label><input id="registration_type"></div>
+        </div>
+        <label>Remarks</label>
+        <textarea id="remarks"></textarea>
+        <button type="submit">Save Candidate</button>
+        <button type="button" class="secondary" onclick="closeCandidateForm()">Cancel</button>
+      </form>
+    </div>
 
-<label>Password</label>
-<input id="password" type="password" placeholder="Enter your password">
-
-<button id="loginBtn">Login</button>
-</section>
-
-<section id="portal" class="hide">
-
-<div class="card">
-<button id="logout" class="danger">Logout</button>
-<h2>Candidate Tracker</h2>
-<p class="muted">AIHRC Common Staff Candidate Database</p>
-
-<input id="search" placeholder="Search name, mobile, passport or position">
-
-<button id="add">+ Add Candidate</button>
-<button id="refresh" class="secondary">Refresh</button>
-</div>
-
-<div id="form" class="card hide">
-<h2>Candidate Details</h2>
-
-<input id="cid" type="hidden">
-
-<div class="grid">
-<div>Name *
-<input id="name" required></div>
-
-<div>Mobile
-<input id="mobile" type="tel"></div>
-
-<div>Email
-<input id="mail" type="email"></div>
-
-<div>Passport Number
-<input id="passport_number"></div>
-
-<div>Passport Expiry
-<input id="passport_expiry" type="date"></div>
-
-<div>Date of Birth
-<input id="dob" type="date"></div>
-
-<div>Country
-<input id="country"></div>
-
-<div>Position
-<input id="position"></div>
-
-<div>Indian Experience
-<input id="indian_experience"></div>
-
-<div>Gulf Experience
-<input id="overseas_experience"></div>
-
-<div>Staff
-<input id="staff"></div>
-
-<div>Status
-<select id="status">
-<option>NEW</option>
-<option>SHORTLISTED</option>
-<option>SELECTED</option>
-<option>MEDICAL</option>
-<option>VISA PROCESSING</option>
-<option>VISA APPROVED</option>
-<option>TICKET PENDING</option>
-<option>TICKET ISSUED</option>
-<option>REJECTED</option>
-<option>DEPLOYED</option>
-</select>
-</div>
-
-<div>Registration Type
-<input id="registration_type"></div>
-
-<div>Location
-<input id="location"></div>
-
-<div>Remarks
-<input id="remarks"></div>
-</div>
-
-<button id="save">Save Candidate</button>
-<button id="cancel" class="secondary">Cancel</button>
-</div>
-
-<div class="card scroll">
-<h2>Candidate List</h2>
-<table>
-<thead>
-<tr>
-<th>Candidate ID</th>
-<th>Name</th>
-<th>Position</th>
-<th>Passport</th>
-<th>DOB</th>
-<th>Gulf Exp</th>
-<th>India Exp</th>
-<th>Mobile</th>
-<th>Status</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
-
-<div id="docs" class="card hide">
-<h2>Candidate Documents</h2>
-<p id="docname" class="muted"></p>
-
-<label>Select document</label>
-<input id="file" type="file">
-
-<button id="upload">Upload Document</button>
-<button id="closeDocs" class="secondary">Close</button>
-
-<hr>
-<div id="docrows"></div>
-</div>
-
-</section>
+    <div class="card hidden" id="documentsCard">
+      <div class="toolbar">
+        <h2 style="margin:0">Candidate Documents</h2>
+        <span style="flex:1"></span>
+        <button class="secondary" onclick="closeDocuments()">Close</button>
+      </div>
+      <p id="selectedCandidateLabel"></p>
+      <input type="hidden" id="selectedCandidateId">
+      <label>Upload CV / Passport / Certificate / Other Document</label>
+      <input type="file" id="documentFile">
+      <button onclick="uploadDocument()">Upload Document</button>
+      <p class="small">Maximum file size: 50 MB.</p>
+      <h3>Uploaded Documents</h3>
+      <div id="documentList">Loading...</div>
+    </div>
+  </div>
 </main>
 
 <script>
-const SUPABASE_URL = 'https://nffnrdvzjkxvokmitlev.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_AoHpTGGE7e1Wkd4iYGaYHg_C1is5lYI';
+const SUPABASE_URL = "https://nffnrdvzjkxvokmitlel.supabase.co";
+const SUPABASE_KEY = "sb_publishable_AoHpTGGE7e1Wkd4iYGaYHg_C1is5lYI";
+const BUCKET = "aihrc-candidate-documents";
+const EMAIL_FUNCTION = "notify-document-upload";
 
-const db = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let candidates = [];
 let selectedCandidate = null;
 
-const $ = id => document.getElementById(id);
-
-const fields = [
-'name','mobile','mail','passport_number','passport_expiry','dob',
-'country','position','indian_experience','overseas_experience',
-'staff','status','registration_type','location','remarks'
-];
-
-function showMessage(text){
-$('msg').textContent = text;
-$('msg').classList.remove('hide');
-}
-
-function clearMessage(){
-$('msg').classList.add('hide');
-$('msg').textContent = '';
-}
-
+function el(id){return document.getElementById(id)}
 function safe(value){
-return String(value ?? '').replace(/[&<>"']/g, ch => ({
-'&':'&amp;',
-'<':'&lt;',
-'>':'&gt;',
-'"':'&quot;',
-"'":'&#39;'
-}[ch]));
+  return String(value ?? "").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function showMessage(text,type="ok"){
+  const box=el("message");
+  box.textContent=text;
+  box.className=type;
+  box.style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function hideMessage(){
+  el("message").style.display="none";
+}
+function makeCandidateId(){
+  return "AIHRC-" + Date.now().toString().slice(-8);
 }
 
-function showPortal(session){
-$('login').classList.toggle('hide',!!session);
-$('portal').classList.toggle('hide',!session);
+async function login(){
+  el("loginMessage").textContent="Signing in...";
+  const email=el("loginEmail").value.trim();
+  const password=el("loginPassword").value;
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error){
+    el("loginMessage").textContent=error.message;
+    return;
+  }
+  showApp(data.user);
+}
 
-if(session){
-clearMessage();
-loadCandidates();
+async function logout(){
+  await db.auth.signOut();
+  el("app").classList.add("hidden");
+  el("logoutBtn").classList.add("hidden");
+  el("loginBox").classList.remove("hidden");
+  el("userLabel").textContent="";
 }
+
+function showApp(user){
+  el("loginBox").classList.add("hidden");
+  el("app").classList.remove("hidden");
+  el("logoutBtn").classList.remove("hidden");
+  el("userLabel").textContent=user.email || "Staff";
+  loadCandidates();
 }
+
+async function checkSession(){
+  const {data}=await db.auth.getSession();
+  if(data.session) showApp(data.session.user);
+}
+checkSession();
 
 async function loadCandidates(){
-const {data,error} = await db
-.from('candidates')
-.select('*')
-.order('created_at',{ascending:false});
-
-if(error){
-showMessage(error.message);
-return;
+  hideMessage();
+  el("candidateRows").innerHTML="<tr><td colspan='7'>Loading...</td></tr>";
+  const {data,error}=await db.from("candidates")
+    .select("*").order("created_at",{ascending:false});
+  if(error){
+    showMessage("Could not load candidates: "+error.message,"err");
+    return;
+  }
+  candidates=data||[];
+  renderCandidates();
 }
 
-candidates = data || [];
-drawCandidates();
+function renderCandidates(){
+  const q=el("searchBox").value.toLowerCase().trim();
+  const filtered=candidates.filter(c=>
+    [c.candidate_id,c.name,c.mobile,c.passport_number,c.position,c.country,c.status]
+    .some(v=>String(v||"").toLowerCase().includes(q))
+  );
+  if(!filtered.length){
+    el("candidateRows").innerHTML="<tr><td colspan='7'>No candidates found.</td></tr>";
+    return;
+  }
+  el("candidateRows").innerHTML=filtered.map(c=>`
+    <tr>
+      <td>${safe(c.candidate_id)}</td>
+      <td>${safe(c.name)}</td>
+      <td>${safe(c.mobile)}</td>
+      <td>${safe(c.position)}</td>
+      <td>${safe(c.country)}</td>
+      <td>${safe(c.status)}</td>
+      <td>
+        <button class="light" onclick="editCandidate('${safe(c.candidate_id)}')">Edit</button>
+        <button onclick="openDocuments('${safe(c.candidate_id)}')">Docs</button>
+        <button class="danger" onclick="deleteCandidate('${safe(c.candidate_id)}')">Delete</button>
+      </td>
+    </tr>`).join("");
 }
 
-function drawCandidates(){
-const query = $('search').value.toLowerCase();
-
-const filtered = candidates.filter(c =>
-[
-c.name,c.mobile,c.passport_number,c.position
-].some(value => String(value || '').toLowerCase().includes(query))
-);
-
-$('rows').innerHTML = filtered.map(c => `
-<tr>
-<td>${safe(c.candidate_id)}</td>
-<td>${safe(c.name)}</td>
-<td>${safe(c.position)}</td>
-<td>${safe(c.passport_number)}</td>
-<td>${safe(c.dob)}</td>
-<td>${safe(c.overseas_experience)}</td>
-<td>${safe(c.indian_experience)}</td>
-<td>${safe(c.mobile)}</td>
-<td>${safe(c.status)}</td>
-<td class="actions">
-<button data-action="edit" data-id="${safe(c.candidate_id)}">Edit</button>
-<button data-action="docs" data-id="${safe(c.candidate_id)}">Docs</button>
-<button class="danger" data-action="delete" data-id="${safe(c.candidate_id)}">Delete</button>
-</td>
-</tr>
-`).join('');
+function newCandidate(){
+  el("candidateForm").reset();
+  el("candidate_id").value="";
+  el("formHeading").textContent="Add Candidate";
+  el("candidateFormCard").classList.remove("hidden");
+  el("candidateFormCard").scrollIntoView({behavior:"smooth"});
+}
+function closeCandidateForm(){
+  el("candidateFormCard").classList.add("hidden");
+}
+function editCandidate(id){
+  const c=candidates.find(x=>x.candidate_id===id);
+  if(!c)return;
+  el("candidate_id").value=c.candidate_id||"";
+  [
+    "name","mobile","email","passport_number","passport_expiry","dob",
+    "country","position","indian_experience","overseas_experience",
+    "staff","location","status","registration_type","remarks"
+  ].forEach(k=>el(k).value=c[k]??"");
+  el("formHeading").textContent="Edit Candidate";
+  el("candidateFormCard").classList.remove("hidden");
+  el("candidateFormCard").scrollIntoView({behavior:"smooth"});
 }
 
-function openForm(candidate){
-clearMessage();
-$('form').classList.remove('hide');
-
-$('cid').value = candidate?.candidate_id || '';
-
-fields.forEach(field => {
-const dbField = field === 'mail' ? 'email' : field;
-$(field).value = candidate?.[dbField] || '';
-});
-
-$('form').scrollIntoView({behavior:'smooth'});
-}
-
-async function saveCandidate(){
-clearMessage();
-
-const record = {};
-
-fields.forEach(field => {
-const dbField = field === 'mail' ? 'email' : field;
-record[dbField] = $(field).value.trim() || null;
-});
-
-if(!record.name){
-showMessage('Please enter candidate name.');
-return;
-}
-
-const id = $('cid').value;
-
-let result;
-
-if(id){
-result = await db.from('candidates')
-.update(record)
-.eq('candidate_id',id);
-}else{
-record.candidate_id = 'AIHRC-' + Date.now();
-
-result = await db.from('candidates')
-.insert(record);
-}
-
-if(result.error){
-showMessage(result.error.message);
-return;
-}
-
-$('form').classList.add('hide');
-showMessage(id ? 'Candidate updated successfully.' : 'Candidate added successfully.');
-
-await loadCandidates();
+async function saveCandidate(event){
+  event.preventDefault();
+  hideMessage();
+  const id=el("candidate_id").value;
+  const payload={
+    name:el("name").value.trim(),
+    mobile:el("mobile").value.trim()||null,
+    email:el("email").value.trim()||null,
+    passport_number:el("passport_number").value.trim()||null,
+    passport_expiry:el("passport_expiry").value||null,
+    dob:el("dob").value||null,
+    country:el("country").value.trim()||null,
+    position:el("position").value.trim()||null,
+    indian_experience:el("indian_experience").value.trim()||null,
+    overseas_experience:el("overseas_experience").value.trim()||null,
+    staff:el("staff").value.trim()||null,
+    location:el("location").value.trim()||null,
+    status:el("status").value,
+    registration_type:el("registration_type").value.trim()||null,
+    remarks:el("remarks").value.trim()||null
+  };
+  let result;
+  if(id){
+    result=await db.from("candidates").update(payload).eq("candidate_id",id);
+  }else{
+    payload.candidate_id=makeCandidateId();
+    result=await db.from("candidates").insert(payload);
+  }
+  if(result.error){
+    showMessage("Save failed: "+result.error.message,"err");
+    return;
+  }
+  closeCandidateForm();
+  showMessage(id?"Candidate updated successfully.":"Candidate added successfully.");
+  await loadCandidates();
 }
 
 async function deleteCandidate(id){
-if(!confirm('Are you sure you want to delete this candidate?')) return;
-
-const {error} = await db.from('candidates')
-.delete()
-.eq('candidate_id',id);
-
-if(error){
-showMessage(error.message);
-return;
-}
-
-showMessage('Candidate deleted successfully.');
-await loadCandidates();
+  if(!confirm("Delete this candidate? This cannot be undone."))return;
+  const {error}=await db.from("candidates").delete().eq("candidate_id",id);
+  if(error){
+    showMessage("Delete failed: "+error.message,"err");
+    return;
+  }
+  showMessage("Candidate deleted.");
+  loadCandidates();
 }
 
 async function openDocuments(id){
-selectedCandidate = candidates.find(c => c.candidate_id === id);
-
-if(!selectedCandidate) return;
-
-$('docs').classList.remove('hide');
-$('docname').textContent =
-selectedCandidate.name + ' / ' + selectedCandidate.candidate_id;
-
-$('docs').scrollIntoView({behavior:'smooth'});
-
-await refreshDocuments();
+  const c=candidates.find(x=>x.candidate_id===id);
+  if(!c)return;
+  selectedCandidate=c;
+  el("selectedCandidateId").value=id;
+  el("selectedCandidateLabel").textContent=
+    "Candidate: "+c.name+" | ID: "+c.candidate_id;
+  el("documentsCard").classList.remove("hidden");
+  el("documentsCard").scrollIntoView({behavior:"smooth"});
+  await loadDocuments();
+}
+function closeDocuments(){
+  el("documentsCard").classList.add("hidden");
+  el("documentFile").value="";
 }
 
-async function refreshDocuments(){
-const {data,error} = await db.from('candidate_documents')
-.select('*')
-.eq('candidate_id',selectedCandidate.candidate_id)
-.order('uploaded_at',{ascending:false});
-
-if(error){
-showMessage(error.message);
-return;
-}
-
-$('docrows').innerHTML = (data || []).map(doc => `
-<p>
-${safe(doc.file_name)}
-<button data-action="download" data-path="${safe(doc.file_path)}">Download</button>
-<button class="danger" data-action="deleteDoc"
-data-docid="${doc.id}"
-data-path="${safe(doc.file_path)}">Delete</button>
-</p>
-`).join('') || '<p class="muted">No documents uploaded yet.</p>';
-}
-
-async function downloadDocument(path){
-const {data,error} = await db.storage
-.from('aihrc-candidate-documents')
-.createSignedUrl(path,300);
-
-if(error){
-showMessage(error.message);
-return;
-}
-
-window.open(data.signedUrl,'_blank');
-}
-
-async function deleteDocument(id,path){
-if(!confirm('Delete this document?')) return;
-
-const {error:storageError} = await db.storage
-.from('aihrc-candidate-documents')
-.remove([path]);
-
-if(storageError){
-showMessage(storageError.message);
-return;
-}
-
-const {error} = await db.from('candidate_documents')
-.delete()
-.eq('id',id);
-
-if(error){
-showMessage(error.message);
-return;
-}
-
-await refreshDocuments();
+async function loadDocuments(){
+  const id=el("selectedCandidateId").value;
+  el("documentList").textContent="Loading documents...";
+  const {data,error}=await db.from("candidate_documents")
+    .select("*").eq("candidate_id",id).order("uploaded_at",{ascending:false});
+  if(error){
+    el("documentList").textContent="Could not load documents: "+error.message;
+    return;
+  }
+  if(!data||!data.length){
+    el("documentList").textContent="No documents uploaded yet.";
+    return;
+  }
+  el("documentList").innerHTML=data.map(d=>`
+    <div class="docrow">
+      <div>
+        <strong>${safe(d.file_name)}</strong>
+        <div class="small">${safe(d.uploaded_at||"")}</div>
+      </div>
+      <div>
+        <button class="light" onclick="downloadDocument('${safe(d.file_path)}')">Download</button>
+        <button class="danger" onclick="deleteDocument(${Number(d.id)},'${safe(d.file_path)}')">Delete</button>
+      </div>
+    </div>`).join("");
 }
 
 async function uploadDocument(){
-clearMessage();
+  hideMessage();
+  const file=el("documentFile").files[0];
+  const candidateId=el("selectedCandidateId").value;
+  if(!file){
+    showMessage("Please select a document first.","err");
+    return;
+  }
+  if(file.size>50*1024*1024){
+    showMessage("File exceeds 50 MB limit.","err");
+    return;
+  }
+  const {data:userData,error:userError}=await db.auth.getUser();
+  if(userError||!userData.user){
+    showMessage("Please login again.","err");
+    return;
+  }
 
-const file = $('file').files[0];
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const path=candidateId+"/"+Date.now()+"_"+safeName;
 
-if(!file || !selectedCandidate){
-showMessage('Please select a candidate and document.');
-return;
+  showMessage("Uploading document...","warn");
+
+  const {error:uploadError}=await db.storage.from(BUCKET)
+    .upload(path,file,{cacheControl:"3600",upsert:false});
+
+  if(uploadError){
+    showMessage("Upload failed: "+uploadError.message,"err");
+    return;
+  }
+
+  const {error:recordError}=await db.from("candidate_documents").insert({
+    candidate_id:candidateId,
+    file_name:file.name,
+    file_path:path,
+    uploaded_by:userData.user.id
+  });
+
+  if(recordError){
+    await db.storage.from(BUCKET).remove([path]);
+    showMessage("Document record failed: "+recordError.message,"err");
+    return;
+  }
+
+  el("documentFile").value="";
+  await loadDocuments();
+  showMessage("Document uploaded successfully. Sending email notification...","warn");
+
+  // EMAIL NOTIFICATION FUNCTION CALL
+  const {data:emailData,error:emailError}=await db.functions.invoke(
+    EMAIL_FUNCTION,
+    {
+      body:{
+        candidateName:selectedCandidate?.name || "Candidate",
+        candidateId:candidateId,
+        fileName:file.name
+      }
+    }
+  );
+
+  if(emailError){
+    showMessage(
+      "Document uploaded successfully, but email notification failed: "+emailError.message,
+      "warn"
+    );
+    console.error("Email notification error:",emailError);
+    return;
+  }
+
+  if(emailData && emailData.success){
+    showMessage("Document uploaded successfully. Email notification accepted by Resend.");
+  }else{
+    showMessage(
+      "Document uploaded, but notification response: "+
+      (emailData?.error || "Please check Edge Function logs."),
+      "warn"
+    );
+    console.error("Email function response:",emailData);
+  }
 }
 
-if(file.size > 10 * 1024 * 1024){
-showMessage('File size must be below 10 MB.');
-return;
+async function downloadDocument(path){
+  const {data,error}=await db.storage.from(BUCKET).download(path);
+  if(error){
+    showMessage("Download failed: "+error.message,"err");
+    return;
+  }
+  const url=URL.createObjectURL(data);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=path.split("/").pop()||"document";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
-const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-
-const path = selectedCandidate.candidate_id + '/' +
-Date.now() + '_' + safeName;
-
-const {error:uploadError} = await db.storage
-.from('aihrc-candidate-documents')
-.upload(path,file);
-
-if(uploadError){
-showMessage(uploadError.message);
-return;
+async function deleteDocument(id,path){
+  if(!confirm("Delete this document?"))return;
+  const {error:storageError}=await db.storage.from(BUCKET).remove([path]);
+  if(storageError){
+    showMessage("File delete failed: "+storageError.message,"err");
+    return;
+  }
+  const {error:recordError}=await db.from("candidate_documents")
+    .delete().eq("id",id);
+  if(recordError){
+    showMessage("Database record delete failed: "+recordError.message,"err");
+    return;
+  }
+  showMessage("Document deleted successfully.");
+  loadDocuments();
 }
-
-const {data:userData,error:userError} = await db.auth.getUser();
-
-if(userError || !userData.user){
-showMessage('Please login again.');
-return;
-}
-
-const {error} = await db.from('candidate_documents')
-.insert({
-candidate_id:selectedCandidate.candidate_id,
-file_name:file.name,
-file_path:path,
-uploaded_by:userData.user.id
-});
-
-if(error){
-showMessage(error.message);
-return;
-}
-
-$('file').value = '';
-showMessage('Document uploaded successfully.');
-await refreshDocuments();
-}
-
-/* Login */
-$('loginBtn').onclick = async () => {
-clearMessage();
-
-const email = $('email').value.trim();
-const password = $('password').value;
-
-if(!email || !password){
-showMessage('Enter email and password.');
-return;
-}
-
-const {data,error} = await db.auth.signInWithPassword({
-email,password
-});
-
-if(error){
-showMessage(error.message);
-return;
-}
-
-showPortal(data.session);
-};
-
-/* Logout */
-$('logout').onclick = async () => {
-await db.auth.signOut();
-$('password').value = '';
-showPortal(null);
-};
-
-/* Buttons */
-$('add').onclick = () => openForm(null);
-$('save').onclick = saveCandidate;
-$('cancel').onclick = () => $('form').classList.add('hide');
-$('search').oninput = drawCandidates;
-$('refresh').onclick = loadCandidates;
-$('upload').onclick = uploadDocument;
-$('closeDocs').onclick = () => $('docs').classList.add('hide');
-
-/* Table actions */
-$('rows').addEventListener('click',event => {
-const button = event.target.closest('button[data-action]');
-if(!button) return;
-
-const id = button.dataset.id;
-const action = button.dataset.action;
-
-if(action === 'edit'){
-openForm(candidates.find(c => c.candidate_id === id));
-}
-if(action === 'docs'){
-openDocuments(id);
-}
-if(action === 'delete'){
-deleteCandidate(id);
-}
-});
-
-/* Document actions */
-$('docrows').addEventListener('click',event => {
-const button = event.target.closest('button[data-action]');
-if(!button) return;
-
-const action = button.dataset.action;
-const path = button.dataset.path;
-
-if(action === 'download'){
-downloadDocument(path);
-}
-if(action === 'deleteDoc'){
-deleteDocument(button.dataset.docid,path);
-}
-});
-
-/* Existing login session */
-db.auth.getSession().then(({data,error}) => {
-if(error){
-showMessage(error.message);
-return;
-}
-showPortal(data.session);
-});
 </script>
-
 </body>
 </html>
