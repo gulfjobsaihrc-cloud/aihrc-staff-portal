@@ -20,6 +20,7 @@ input,select,textarea{width:100%;padding:11px;border:1px solid #cbd7ce;border-ra
 textarea{min-height:75px}
 button{background:#176844;color:white;border:0;padding:10px 15px;border-radius:6px;cursor:pointer;margin:3px;font-weight:bold}
 button:hover{background:#124b35}
+button:disabled{opacity:.55;cursor:not-allowed}
 .secondary{background:#64756b}
 .danger{background:#b83232}
 .light{background:#e7f0e9;color:#124b35}
@@ -58,7 +59,7 @@ th{background:#edf4ef;color:#124b35}
     <input type="email" id="loginEmail" placeholder="Enter email">
     <label>Password</label>
     <input type="password" id="loginPassword" placeholder="Enter password">
-    <button style="width:100%" onclick="login()">Login</button>
+    <button id="loginBtn" style="width:100%" onclick="login()">Login</button>
     <div id="loginMessage"></div>
   </div>
 
@@ -108,7 +109,7 @@ th{background:#edf4ef;color:#124b35}
           <div>
             <label>Status</label>
             <select id="status">
-              <option value="REGISTERED">REGISTERED</option>
+              <option value="New">New</option>
               <option value="SHORTLISTED">SHORTLISTED</option>
               <option value="SELECTED">SELECTED</option>
               <option value="MEDICAL">MEDICAL</option>
@@ -124,7 +125,7 @@ th{background:#edf4ef;color:#124b35}
         </div>
         <label>Remarks</label>
         <textarea id="remarks"></textarea>
-        <button type="submit">Save Candidate</button>
+        <button type="submit" id="saveCandidateBtn">Save Candidate</button>
         <button type="button" class="secondary" onclick="closeCandidateForm()">Cancel</button>
       </form>
     </div>
@@ -139,7 +140,7 @@ th{background:#edf4ef;color:#124b35}
       <input type="hidden" id="selectedCandidateId">
       <label>Select CV / Passport / Certificate / Other Document</label>
       <input type="file" id="documentFile">
-      <button onclick="uploadDocument()">Upload Document</button>
+      <button type="button" id="uploadBtn" onclick="uploadDocument()">Upload Document</button>
       <p class="small">Maximum file size: 50 MB.</p>
       <h3>Uploaded Documents</h3>
       <div id="documentList">Loading...</div>
@@ -148,11 +149,23 @@ th{background:#edf4ef;color:#124b35}
 </main>
 
 <script>
-const SUPABASE_URL = https://nffnrdvzjkxvokmitlev.supabase.co/rest/v1/
+"use strict";
+
+const SUPABASE_URL = "https://nffnrdvzjkxvokmitlev.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AoHpTGGE7e1Wkd4iYGaYHg_C1is5lYI";
 const BUCKET = "aihrc-candidate-documents";
 
-const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY,
+  {
+    auth:{
+      persistSession:true,
+      autoRefreshToken:true,
+      detectSessionInUrl:true
+    }
+  }
+);
 
 let candidates=[];
 let selectedCandidate=null;
@@ -171,12 +184,17 @@ function showMessage(message,type="ok"){
   $("message").classList.remove("hidden");
 }
 
+function hideMessage(){
+  $("message").classList.add("hidden");
+}
+
 function showLoginMessage(message,type="err"){
   $("loginMessage").textContent=message;
   $("loginMessage").className="message "+type;
 }
 
 async function login(){
+  const btn=$("loginBtn");
   const email=$("loginEmail").value.trim();
   const password=$("loginPassword").value;
 
@@ -185,22 +203,27 @@ async function login(){
     return;
   }
 
+  btn.disabled=true;
   showLoginMessage("Signing in...","warn");
 
-  const {data,error}=await db.auth.signInWithPassword({email,password});
+  try{
+    const {data,error}=await db.auth.signInWithPassword({email,password});
 
-  if(error){
-    showLoginMessage("Login failed: "+error.message);
-    return;
+    if(error) throw error;
+
+    await showApp(data.user);
+  }catch(error){
+    showLoginMessage("Login error: "+(error.message || String(error)));
+  }finally{
+    btn.disabled=false;
   }
-
-  await showApp(data.user);
 }
 
 async function logout(){
   const {error}=await db.auth.signOut();
+
   if(error){
-    showMessage("Logout failed: "+error.message,"err");
+    showMessage("Logout error: "+error.message,"err");
     return;
   }
 
@@ -208,6 +231,7 @@ async function logout(){
   $("logoutBtn").classList.add("hidden");
   $("loginBox").classList.remove("hidden");
   $("userLabel").textContent="";
+  showLoginMessage("Logged out successfully.","ok");
 }
 
 async function showApp(user){
@@ -219,35 +243,32 @@ async function showApp(user){
 }
 
 async function checkSession(){
-  const {data,error}=await db.auth.getSession();
-  if(error){
+  try{
+    const {data,error}=await db.auth.getSession();
+    if(error) throw error;
+    if(data.session) await showApp(data.session.user);
+  }catch(error){
     showLoginMessage("Session error: "+error.message);
-    return;
-  }
-  if(data.session){
-    await showApp(data.session.user);
   }
 }
-checkSession();
 
 async function loadCandidates(){
   $("candidateRows").innerHTML="<tr><td colspan='7'>Loading candidates...</td></tr>";
 
-  const {data,error}=await db.from("candidates")
-    .select("*")
-    .order("created_at",{ascending:false});
+  try{
+    const {data,error}=await db.from("candidates")
+      .select("*")
+      .order("created_at",{ascending:false});
 
-  if(error){
+    if(error) throw error;
+
+    candidates=data || [];
+    renderCandidates();
+    hideMessage();
+  }catch(error){
     $("candidateRows").innerHTML="<tr><td colspan='7'>Could not load records.</td></tr>";
-    showMessage("CANDIDATE LOAD ERROR:\n"+error.message+
-      (error.code?"\nError code: "+error.code:""),"err");
-    console.error("Candidate load error:",error);
-    return;
+    showMessage("CANDIDATE LOAD ERROR:\n"+error.message,"err");
   }
-
-  candidates=data || [];
-  renderCandidates();
-  $("message").classList.add("hidden");
 }
 
 function renderCandidates(){
@@ -298,27 +319,22 @@ function editCandidate(id){
 
   $("candidate_id").value=c.candidate_id ?? "";
 
-  const fields=[
+  [
     "name","mobile","email","passport_number","passport_expiry","dob",
     "country","position","indian_experience","overseas_experience",
     "staff","location","status","registration_type","remarks"
-  ];
-
-  fields.forEach(k=>$(k).value=c[k] ?? "");
+  ].forEach(k=>$(k).value=c[k] ?? "");
 
   $("formHeading").textContent="Edit Candidate";
   $("candidateFormCard").classList.remove("hidden");
   $("candidateFormCard").scrollIntoView({behavior:"smooth"});
 }
 
-function numberOrNull(value){
-  if(value.trim()==="")return null;
-  const n=Number(value);
-  return Number.isFinite(n)?n:null;
-}
-
 async function saveCandidate(event){
   event.preventDefault();
+
+  const btn=$("saveCandidateBtn");
+  btn.disabled=true;
 
   const id=$("candidate_id").value;
 
@@ -331,8 +347,8 @@ async function saveCandidate(event){
     dob:$("dob").value || null,
     country:$("country").value.trim() || null,
     position:$("position").value.trim() || null,
-    indian_experience:numberOrNull($("indian_experience").value),
-    overseas_experience:numberOrNull($("overseas_experience").value),
+    indian_experience:$("indian_experience").value.trim() || null,
+    overseas_experience:$("overseas_experience").value.trim() || null,
     staff:$("staff").value.trim() || null,
     location:$("location").value.trim() || null,
     status:$("status").value,
@@ -340,39 +356,40 @@ async function saveCandidate(event){
     remarks:$("remarks").value.trim() || null
   };
 
-  let result;
+  try{
+    let result;
 
-  if(id){
-    result=await db.from("candidates").update(payload).eq("candidate_id",id);
-  }else{
-    payload.candidate_id="AIHRC-"+Date.now();
-    result=await db.from("candidates").insert(payload);
+    if(id){
+      result=await db.from("candidates").update(payload).eq("candidate_id",id);
+    }else{
+      payload.candidate_id="AIHRC-"+Date.now();
+      result=await db.from("candidates").insert(payload);
+    }
+
+    if(result.error) throw result.error;
+
+    closeCandidateForm();
+    showMessage(id?"Candidate updated.":"Candidate added.");
+    await loadCandidates();
+  }catch(error){
+    showMessage("SAVE ERROR:\n"+error.message,"err");
+  }finally{
+    btn.disabled=false;
   }
-
-  if(result.error){
-    showMessage("SAVE ERROR:\n"+result.error.message+
-      (result.error.code?"\nError code: "+result.error.code:""),"err");
-    console.error(result.error);
-    return;
-  }
-
-  closeCandidateForm();
-  showMessage(id?"Candidate updated.":"Candidate added.");
-  await loadCandidates();
 }
 
 async function deleteCandidate(id){
   if(!confirm("Delete this candidate?"))return;
 
-  const {error}=await db.from("candidates").delete().eq("candidate_id",id);
+  try{
+    const {error}=await db.from("candidates").delete().eq("candidate_id",id);
+    if(error) throw error;
 
-  if(error){
+    showMessage("Candidate deleted.");
+    await loadCandidates();
+  }catch(error){
     showMessage("DELETE ERROR:\n"+error.message,"err");
-    return;
   }
-
-  showMessage("Candidate deleted.");
-  await loadCandidates();
 }
 
 async function openDocuments(id){
@@ -397,39 +414,41 @@ async function loadDocuments(){
   const id=$("selectedCandidateId").value;
   $("documentList").textContent="Loading...";
 
-  const {data,error}=await db.from("candidate_documents")
-    .select("*").eq("candidate_id",id).order("uploaded_at",{ascending:false});
+  try{
+    const {data,error}=await db.from("candidate_documents")
+      .select("*").eq("candidate_id",id).order("uploaded_at",{ascending:false});
 
-  if(error){
-    $("documentList").textContent="Document load error: "+error.message;
-    return;
-  }
+    if(error) throw error;
 
-  if(!data || data.length===0){
-    $("documentList").textContent="No documents uploaded.";
-    return;
-  }
+    if(!data || data.length===0){
+      $("documentList").textContent="No documents uploaded.";
+      return;
+    }
 
-  $("documentList").innerHTML=data.map(d=>`
-    <div class="docrow">
-      <div>
-        <strong>${escapeHTML(d.file_name)}</strong>
-        <div class="small">${escapeHTML(d.uploaded_at)}</div>
+    $("documentList").innerHTML=data.map(d=>`
+      <div class="docrow">
+        <div>
+          <strong>${escapeHTML(d.file_name)}</strong>
+          <div class="small">${escapeHTML(d.uploaded_at)}</div>
+        </div>
+        <div>
+          <button class="light" onclick="downloadDocument('${escapeHTML(d.file_path)}')">Download</button>
+          <button class="danger" onclick="deleteDocument(${Number(d.id)},'${escapeHTML(d.file_path)}')">Delete</button>
+        </div>
       </div>
-      <div>
-        <button class="light" onclick="downloadDocument('${escapeHTML(d.file_path)}')">Download</button>
-        <button class="danger" onclick="deleteDocument(${Number(d.id)},'${escapeHTML(d.file_path)}')">Delete</button>
-      </div>
-    </div>
-  `).join("");
+    `).join("");
+  }catch(error){
+    $("documentList").textContent="DOCUMENT LOAD ERROR: "+error.message;
+  }
 }
 
 async function uploadDocument(){
+  const btn=$("uploadBtn");
   const file=$("documentFile").files[0];
   const candidateId=$("selectedCandidateId").value;
 
   if(!file){
-    showMessage("Please select a file.","err");
+    showMessage("Please choose a document first.","err");
     return;
   }
 
@@ -438,108 +457,109 @@ async function uploadDocument(){
     return;
   }
 
-  const {data:userData,error:userError}=await db.auth.getUser();
+  btn.disabled=true;
+  btn.textContent="Uploading...";
 
-  if(userError || !userData.user){
-    showMessage("Login session expired. Please login again.","err");
-    return;
-  }
+  let uploadedPath=null;
 
-  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
-  const path=candidateId+"/"+Date.now()+"_"+safeName;
+  try{
+    const {data:userData,error:userError}=await db.auth.getUser();
 
-  showMessage("Uploading document...","warn");
+    if(userError) throw userError;
+    if(!userData.user) throw new Error("Login session expired. Login again.");
 
-  const {error:uploadError}=await db.storage.from(BUCKET)
-    .upload(path,file,{cacheControl:"3600",upsert:false});
+    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const path=candidateId+"/"+Date.now()+"_"+safeName;
 
-  if(uploadError){
-    showMessage("UPLOAD ERROR:\n"+uploadError.message,"err");
-    return;
-  }
+    showMessage("Uploading document...","warn");
 
-  const {error:recordError}=await db.from("candidate_documents").insert({
-    candidate_id:candidateId,
-    file_name:file.name,
-    file_path:path,
-    uploaded_by:userData.user.id
-  });
+    const {error:uploadError}=await db.storage.from(BUCKET)
+      .upload(path,file,{cacheControl:"3600",upsert:false});
 
-  if(recordError){
-    await db.storage.from(BUCKET).remove([path]);
-    showMessage("DOCUMENT RECORD ERROR:\n"+recordError.message,"err");
-    return;
-  }
+    if(uploadError) throw uploadError;
+    uploadedPath=path;
 
-  $("documentFile").value="";
-  await loadDocuments();
+    const {error:recordError}=await db.from("candidate_documents").insert({
+      candidate_id:candidateId,
+      file_name:file.name,
+      file_path:path,
+      uploaded_by:userData.user.id
+    });
 
-  showMessage("Document uploaded. Sending email notification...","warn");
+    if(recordError) throw recordError;
 
-  const {data:emailData,error:emailError}=await db.functions.invoke(
-    "notify-document-upload",
-    {
-      body:{
-        candidateName:selectedCandidate?.name || "Candidate",
-        candidateId:candidateId,
-        fileName:file.name
+    $("documentFile").value="";
+    await loadDocuments();
+
+    showMessage("Document uploaded. Sending email notification...","warn");
+
+    const {data:emailData,error:emailError}=await db.functions.invoke(
+      "notify-document-upload",
+      {
+        body:{
+          candidateName:selectedCandidate?.name || "Candidate",
+          candidateId:candidateId,
+          fileName:file.name
+        }
       }
+    );
+
+    if(emailError){
+      showMessage("Document uploaded, but email notification failed: "+emailError.message,"warn");
+    }else if(emailData?.success){
+      showMessage("Document uploaded successfully. Email notification accepted by Resend.");
+    }else{
+      showMessage("Document uploaded, but email response: "+JSON.stringify(emailData),"warn");
     }
-  );
 
-  if(emailError){
-    showMessage("Document uploaded, but EMAIL ERROR:\n"+emailError.message,"warn");
-    console.error("Email error:",emailError);
-    return;
-  }
-
-  if(emailData?.success){
-    showMessage("Document uploaded successfully. Email notification accepted by Resend.");
-  }else{
-    showMessage("Document uploaded, but email notification failed:\n"+
-      JSON.stringify(emailData),"warn");
+  }catch(error){
+    if(uploadedPath){
+      await db.storage.from(BUCKET).remove([uploadedPath]);
+    }
+    showMessage("UPLOAD ERROR:\n"+(error.message || String(error)),"err");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Upload Document";
   }
 }
 
 async function downloadDocument(path){
-  const {data,error}=await db.storage.from(BUCKET).download(path);
+  try{
+    const {data,error}=await db.storage.from(BUCKET).download(path);
+    if(error) throw error;
 
-  if(error){
+    const url=URL.createObjectURL(data);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=path.split("/").pop() || "document";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(error){
     showMessage("DOWNLOAD ERROR:\n"+error.message,"err");
-    return;
   }
-
-  const url=URL.createObjectURL(data);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download=path.split("/").pop() || "document";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 async function deleteDocument(id,path){
   if(!confirm("Delete this document?"))return;
 
-  const {error:storageError}=await db.storage.from(BUCKET).remove([path]);
+  try{
+    const {error:storageError}=await db.storage.from(BUCKET).remove([path]);
+    if(storageError) throw storageError;
 
-  if(storageError){
-    showMessage("FILE DELETE ERROR:\n"+storageError.message,"err");
-    return;
+    const {error:recordError}=await db.from("candidate_documents")
+      .delete().eq("id",id);
+    if(recordError) throw recordError;
+
+    showMessage("Document deleted.");
+    await loadDocuments();
+  }catch(error){
+    showMessage("DOCUMENT DELETE ERROR:\n"+error.message,"err");
   }
-
-  const {error:recordError}=await db.from("candidate_documents")
-    .delete().eq("id",id);
-
-  if(recordError){
-    showMessage("RECORD DELETE ERROR:\n"+recordError.message,"err");
-    return;
-  }
-
-  showMessage("Document deleted.");
-  await loadDocuments();
 }
+
+checkSession();
 </script>
 </body>
 </html>
