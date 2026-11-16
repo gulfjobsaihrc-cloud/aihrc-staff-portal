@@ -3,41 +3,41 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AIHRC Staff Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f3f6f4;font-family:Arial,sans-serif;color:#26352c}
-header{background:#124b35;color:white;padding:17px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-header h2{margin:0;font-size:20px}
+body{margin:0;background:#f3f6f4;color:#26352c;font-family:Arial,sans-serif}
+header{background:#124b35;color:white;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+header h2{font-size:19px;margin:0}
 main{max-width:1250px;margin:22px auto;padding:0 14px}
 .card{background:white;border:1px solid #dce5df;border-radius:12px;padding:20px;margin-bottom:18px}
+#loginBox{max-width:450px;margin:8vh auto}
 h2,h3{color:#124b35}
+label{display:block;margin-top:8px}
 input,select,textarea{width:100%;padding:11px;border:1px solid #cbd7ce;border-radius:6px;margin:6px 0 12px;font-size:14px}
 textarea{min-height:75px}
-button{background:#176844;color:white;border:0;padding:10px 15px;border-radius:6px;cursor:pointer;margin:3px;font-weight:600}
+button{background:#176844;color:white;border:0;padding:10px 15px;border-radius:6px;cursor:pointer;margin:3px;font-weight:bold}
 button:hover{background:#124b35}
-button.secondary{background:#64756b}
-button.danger{background:#b83232}
-button.light{background:#e7f0e9;color:#124b35}
+.secondary{background:#64756b}
+.danger{background:#b83232}
+.light{background:#e7f0e9;color:#124b35}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .toolbar input{flex:1;min-width:180px}
-table{width:100%;border-collapse:collapse;min-width:750px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
 th,td{padding:11px;border-bottom:1px solid #e3e9e5;text-align:left;font-size:13px}
 th{background:#edf4ef;color:#124b35}
-.tablewrap{overflow-x:auto}
 .hidden{display:none!important}
-#loginBox{max-width:420px;margin:9vh auto}
-.status{font-weight:bold;color:#176844}
 .small{font-size:12px;color:#68786d}
-#message{padding:10px;border-radius:6px;margin:10px 0;display:none}
-#message.ok{display:block;background:#e4f4e9;color:#145c31}
-#message.err{display:block;background:#ffebeb;color:#9b2020}
-#message.warn{display:block;background:#fff4dc;color:#805600}
+.message{padding:11px;border-radius:6px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.ok{background:#e4f4e9;color:#145c31}
+.err{background:#ffebeb;color:#9b2020}
+.warn{background:#fff4dc;color:#805600}
 .docrow{padding:10px;border-bottom:1px solid #e5eae6;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-@media(max-width:750px){.grid{grid-template-columns:1fr}header h2{font-size:17px}main{margin:12px auto}.card{padding:14px}}
+@media(max-width:750px){.grid{grid-template-columns:1fr}main{margin:12px auto}.card{padding:14px}}
 </style>
 </head>
 <body>
@@ -55,15 +55,15 @@ th{background:#edf4ef;color:#124b35}
     <h2>Staff Portal Login</h2>
     <p class="small">AIHRC Candidate Management System</p>
     <label>Email</label>
-    <input type="email" id="loginEmail" placeholder="Enter login email">
+    <input type="email" id="loginEmail" placeholder="Enter email">
     <label>Password</label>
     <input type="password" id="loginPassword" placeholder="Enter password">
     <button style="width:100%" onclick="login()">Login</button>
-    <div id="loginMessage" class="small"></div>
+    <div id="loginMessage"></div>
   </div>
 
   <div id="app" class="hidden">
-    <div id="message"></div>
+    <div id="message" class="message hidden"></div>
 
     <div class="card">
       <div class="toolbar">
@@ -72,8 +72,7 @@ th{background:#edf4ef;color:#124b35}
         <button onclick="newCandidate()">+ Add Candidate</button>
         <button class="secondary" onclick="loadCandidates()">Refresh</button>
       </div>
-      <p class="small">Manage candidate records and recruitment progress.</p>
-      <input id="searchBox" placeholder="Search name, mobile, passport, position or candidate ID..." oninput="renderCandidates()">
+      <input id="searchBox" placeholder="Search candidates..." oninput="renderCandidates()">
       <div class="tablewrap">
         <table>
           <thead>
@@ -94,7 +93,7 @@ th{background:#edf4ef;color:#124b35}
       <form id="candidateForm" onsubmit="saveCandidate(event)">
         <input type="hidden" id="candidate_id">
         <div class="grid">
-          <div><label>Candidate Name *</label><input id="name" required></div>
+          <div><label>Name *</label><input id="name" required></div>
           <div><label>Mobile</label><input id="mobile"></div>
           <div><label>Email</label><input id="email" type="email"></div>
           <div><label>Passport Number</label><input id="passport_number"></div>
@@ -102,8 +101,8 @@ th{background:#edf4ef;color:#124b35}
           <div><label>Date of Birth</label><input id="dob" type="date"></div>
           <div><label>Country</label><input id="country"></div>
           <div><label>Position</label><input id="position"></div>
-          <div><label>Indian Experience (Years)</label><input id="indian_experience"></div>
-          <div><label>Overseas Experience (Years)</label><input id="overseas_experience"></div>
+          <div><label>Indian Experience</label><input id="indian_experience"></div>
+          <div><label>Overseas Experience</label><input id="overseas_experience"></div>
           <div><label>Staff</label><input id="staff"></div>
           <div><label>Location</label><input id="location"></div>
           <div>
@@ -138,7 +137,7 @@ th{background:#edf4ef;color:#124b35}
       </div>
       <p id="selectedCandidateLabel"></p>
       <input type="hidden" id="selectedCandidateId">
-      <label>Upload CV / Passport / Certificate / Other Document</label>
+      <label>Select CV / Passport / Certificate / Other Document</label>
       <input type="file" id="documentFile">
       <button onclick="uploadDocument()">Upload Document</button>
       <p class="small">Maximum file size: 50 MB.</p>
@@ -152,235 +151,297 @@ th{background:#edf4ef;color:#124b35}
 const SUPABASE_URL = "https://nffnrdvzjkxvokmitlel.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AoHpTGGE7e1Wkd4iYGaYHg_C1is5lYI";
 const BUCKET = "aihrc-candidate-documents";
-const EMAIL_FUNCTION = "notify-document-upload";
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let candidates = [];
-let selectedCandidate = null;
+let candidates=[];
+let selectedCandidate=null;
 
-function el(id){return document.getElementById(id)}
-function safe(value){
+const $ = id => document.getElementById(id);
+
+function escapeHTML(value){
   return String(value ?? "").replace(/[&<>"']/g,c=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[c]));
 }
-function showMessage(text,type="ok"){
-  const box=el("message");
-  box.textContent=text;
-  box.className=type;
-  box.style.display="block";
-  window.scrollTo({top:0,behavior:"smooth"});
+
+function showMessage(message,type="ok"){
+  $("message").textContent=message;
+  $("message").className="message "+type;
+  $("message").classList.remove("hidden");
 }
-function hideMessage(){
-  el("message").style.display="none";
-}
-function makeCandidateId(){
-  return "AIHRC-" + Date.now().toString().slice(-8);
+
+function showLoginMessage(message,type="err"){
+  $("loginMessage").textContent=message;
+  $("loginMessage").className="message "+type;
 }
 
 async function login(){
-  el("loginMessage").textContent="Signing in...";
-  const email=el("loginEmail").value.trim();
-  const password=el("loginPassword").value;
-  const {data,error}=await db.auth.signInWithPassword({email,password});
-  if(error){
-    el("loginMessage").textContent=error.message;
+  const email=$("loginEmail").value.trim();
+  const password=$("loginPassword").value;
+
+  if(!email || !password){
+    showLoginMessage("Enter email and password.");
     return;
   }
-  showApp(data.user);
+
+  showLoginMessage("Signing in...","warn");
+
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+
+  if(error){
+    showLoginMessage("Login failed: "+error.message);
+    return;
+  }
+
+  await showApp(data.user);
 }
 
 async function logout(){
-  await db.auth.signOut();
-  el("app").classList.add("hidden");
-  el("logoutBtn").classList.add("hidden");
-  el("loginBox").classList.remove("hidden");
-  el("userLabel").textContent="";
+  const {error}=await db.auth.signOut();
+  if(error){
+    showMessage("Logout failed: "+error.message,"err");
+    return;
+  }
+
+  $("app").classList.add("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("loginBox").classList.remove("hidden");
+  $("userLabel").textContent="";
 }
 
-function showApp(user){
-  el("loginBox").classList.add("hidden");
-  el("app").classList.remove("hidden");
-  el("logoutBtn").classList.remove("hidden");
-  el("userLabel").textContent=user.email || "Staff";
-  loadCandidates();
+async function showApp(user){
+  $("loginBox").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  $("userLabel").textContent=user.email || "Staff";
+  await loadCandidates();
 }
 
 async function checkSession(){
-  const {data}=await db.auth.getSession();
-  if(data.session) showApp(data.session.user);
+  const {data,error}=await db.auth.getSession();
+  if(error){
+    showLoginMessage("Session error: "+error.message);
+    return;
+  }
+  if(data.session){
+    await showApp(data.session.user);
+  }
 }
 checkSession();
 
 async function loadCandidates(){
-  hideMessage();
-  el("candidateRows").innerHTML="<tr><td colspan='7'>Loading...</td></tr>";
+  $("candidateRows").innerHTML="<tr><td colspan='7'>Loading candidates...</td></tr>";
+
   const {data,error}=await db.from("candidates")
-    .select("*").order("created_at",{ascending:false});
+    .select("*")
+    .order("created_at",{ascending:false});
+
   if(error){
-    showMessage("Could not load candidates: "+error.message,"err");
+    $("candidateRows").innerHTML="<tr><td colspan='7'>Could not load records.</td></tr>";
+    showMessage("CANDIDATE LOAD ERROR:\n"+error.message+
+      (error.code?"\nError code: "+error.code:""),"err");
+    console.error("Candidate load error:",error);
     return;
   }
-  candidates=data||[];
+
+  candidates=data || [];
   renderCandidates();
+  $("message").classList.add("hidden");
 }
 
 function renderCandidates(){
-  const q=el("searchBox").value.toLowerCase().trim();
+  const q=$("searchBox").value.toLowerCase().trim();
+
   const filtered=candidates.filter(c=>
     [c.candidate_id,c.name,c.mobile,c.passport_number,c.position,c.country,c.status]
     .some(v=>String(v||"").toLowerCase().includes(q))
   );
+
   if(!filtered.length){
-    el("candidateRows").innerHTML="<tr><td colspan='7'>No candidates found.</td></tr>";
+    $("candidateRows").innerHTML="<tr><td colspan='7'>No candidates found.</td></tr>";
     return;
   }
-  el("candidateRows").innerHTML=filtered.map(c=>`
+
+  $("candidateRows").innerHTML=filtered.map(c=>`
     <tr>
-      <td>${safe(c.candidate_id)}</td>
-      <td>${safe(c.name)}</td>
-      <td>${safe(c.mobile)}</td>
-      <td>${safe(c.position)}</td>
-      <td>${safe(c.country)}</td>
-      <td>${safe(c.status)}</td>
+      <td>${escapeHTML(c.candidate_id)}</td>
+      <td>${escapeHTML(c.name)}</td>
+      <td>${escapeHTML(c.mobile)}</td>
+      <td>${escapeHTML(c.position)}</td>
+      <td>${escapeHTML(c.country)}</td>
+      <td>${escapeHTML(c.status)}</td>
       <td>
-        <button class="light" onclick="editCandidate('${safe(c.candidate_id)}')">Edit</button>
-        <button onclick="openDocuments('${safe(c.candidate_id)}')">Docs</button>
-        <button class="danger" onclick="deleteCandidate('${safe(c.candidate_id)}')">Delete</button>
+        <button class="light" onclick="editCandidate('${escapeHTML(c.candidate_id)}')">Edit</button>
+        <button onclick="openDocuments('${escapeHTML(c.candidate_id)}')">Docs</button>
+        <button class="danger" onclick="deleteCandidate('${escapeHTML(c.candidate_id)}')">Delete</button>
       </td>
-    </tr>`).join("");
+    </tr>
+  `).join("");
 }
 
 function newCandidate(){
-  el("candidateForm").reset();
-  el("candidate_id").value="";
-  el("formHeading").textContent="Add Candidate";
-  el("candidateFormCard").classList.remove("hidden");
-  el("candidateFormCard").scrollIntoView({behavior:"smooth"});
+  $("candidateForm").reset();
+  $("candidate_id").value="";
+  $("formHeading").textContent="Add Candidate";
+  $("candidateFormCard").classList.remove("hidden");
+  $("candidateFormCard").scrollIntoView({behavior:"smooth"});
 }
+
 function closeCandidateForm(){
-  el("candidateFormCard").classList.add("hidden");
+  $("candidateFormCard").classList.add("hidden");
 }
+
 function editCandidate(id){
-  const c=candidates.find(x=>x.candidate_id===id);
+  const c=candidates.find(x=>String(x.candidate_id)===String(id));
   if(!c)return;
-  el("candidate_id").value=c.candidate_id||"";
-  [
+
+  $("candidate_id").value=c.candidate_id ?? "";
+
+  const fields=[
     "name","mobile","email","passport_number","passport_expiry","dob",
     "country","position","indian_experience","overseas_experience",
     "staff","location","status","registration_type","remarks"
-  ].forEach(k=>el(k).value=c[k]??"");
-  el("formHeading").textContent="Edit Candidate";
-  el("candidateFormCard").classList.remove("hidden");
-  el("candidateFormCard").scrollIntoView({behavior:"smooth"});
+  ];
+
+  fields.forEach(k=>$(k).value=c[k] ?? "");
+
+  $("formHeading").textContent="Edit Candidate";
+  $("candidateFormCard").classList.remove("hidden");
+  $("candidateFormCard").scrollIntoView({behavior:"smooth"});
+}
+
+function numberOrNull(value){
+  if(value.trim()==="")return null;
+  const n=Number(value);
+  return Number.isFinite(n)?n:null;
 }
 
 async function saveCandidate(event){
   event.preventDefault();
-  hideMessage();
-  const id=el("candidate_id").value;
+
+  const id=$("candidate_id").value;
+
   const payload={
-    name:el("name").value.trim(),
-    mobile:el("mobile").value.trim()||null,
-    email:el("email").value.trim()||null,
-    passport_number:el("passport_number").value.trim()||null,
-    passport_expiry:el("passport_expiry").value||null,
-    dob:el("dob").value||null,
-    country:el("country").value.trim()||null,
-    position:el("position").value.trim()||null,
-    indian_experience:el("indian_experience").value.trim()||null,
-    overseas_experience:el("overseas_experience").value.trim()||null,
-    staff:el("staff").value.trim()||null,
-    location:el("location").value.trim()||null,
-    status:el("status").value,
-    registration_type:el("registration_type").value.trim()||null,
-    remarks:el("remarks").value.trim()||null
+    name:$("name").value.trim(),
+    mobile:$("mobile").value.trim() || null,
+    email:$("email").value.trim() || null,
+    passport_number:$("passport_number").value.trim() || null,
+    passport_expiry:$("passport_expiry").value || null,
+    dob:$("dob").value || null,
+    country:$("country").value.trim() || null,
+    position:$("position").value.trim() || null,
+    indian_experience:numberOrNull($("indian_experience").value),
+    overseas_experience:numberOrNull($("overseas_experience").value),
+    staff:$("staff").value.trim() || null,
+    location:$("location").value.trim() || null,
+    status:$("status").value,
+    registration_type:$("registration_type").value.trim() || null,
+    remarks:$("remarks").value.trim() || null
   };
+
   let result;
+
   if(id){
     result=await db.from("candidates").update(payload).eq("candidate_id",id);
   }else{
-    payload.candidate_id=makeCandidateId();
+    payload.candidate_id="AIHRC-"+Date.now();
     result=await db.from("candidates").insert(payload);
   }
+
   if(result.error){
-    showMessage("Save failed: "+result.error.message,"err");
+    showMessage("SAVE ERROR:\n"+result.error.message+
+      (result.error.code?"\nError code: "+result.error.code:""),"err");
+    console.error(result.error);
     return;
   }
+
   closeCandidateForm();
-  showMessage(id?"Candidate updated successfully.":"Candidate added successfully.");
+  showMessage(id?"Candidate updated.":"Candidate added.");
   await loadCandidates();
 }
 
 async function deleteCandidate(id){
-  if(!confirm("Delete this candidate? This cannot be undone."))return;
+  if(!confirm("Delete this candidate?"))return;
+
   const {error}=await db.from("candidates").delete().eq("candidate_id",id);
+
   if(error){
-    showMessage("Delete failed: "+error.message,"err");
+    showMessage("DELETE ERROR:\n"+error.message,"err");
     return;
   }
+
   showMessage("Candidate deleted.");
-  loadCandidates();
+  await loadCandidates();
 }
 
 async function openDocuments(id){
-  const c=candidates.find(x=>x.candidate_id===id);
-  if(!c)return;
-  selectedCandidate=c;
-  el("selectedCandidateId").value=id;
-  el("selectedCandidateLabel").textContent=
-    "Candidate: "+c.name+" | ID: "+c.candidate_id;
-  el("documentsCard").classList.remove("hidden");
-  el("documentsCard").scrollIntoView({behavior:"smooth"});
+  selectedCandidate=candidates.find(x=>String(x.candidate_id)===String(id));
+  if(!selectedCandidate)return;
+
+  $("selectedCandidateId").value=id;
+  $("selectedCandidateLabel").textContent=
+    "Candidate: "+selectedCandidate.name+" | ID: "+id;
+
+  $("documentsCard").classList.remove("hidden");
+  $("documentsCard").scrollIntoView({behavior:"smooth"});
   await loadDocuments();
 }
+
 function closeDocuments(){
-  el("documentsCard").classList.add("hidden");
-  el("documentFile").value="";
+  $("documentsCard").classList.add("hidden");
+  $("documentFile").value="";
 }
 
 async function loadDocuments(){
-  const id=el("selectedCandidateId").value;
-  el("documentList").textContent="Loading documents...";
+  const id=$("selectedCandidateId").value;
+  $("documentList").textContent="Loading...";
+
   const {data,error}=await db.from("candidate_documents")
     .select("*").eq("candidate_id",id).order("uploaded_at",{ascending:false});
+
   if(error){
-    el("documentList").textContent="Could not load documents: "+error.message;
+    $("documentList").textContent="Document load error: "+error.message;
     return;
   }
-  if(!data||!data.length){
-    el("documentList").textContent="No documents uploaded yet.";
+
+  if(!data || data.length===0){
+    $("documentList").textContent="No documents uploaded.";
     return;
   }
-  el("documentList").innerHTML=data.map(d=>`
+
+  $("documentList").innerHTML=data.map(d=>`
     <div class="docrow">
       <div>
-        <strong>${safe(d.file_name)}</strong>
-        <div class="small">${safe(d.uploaded_at||"")}</div>
+        <strong>${escapeHTML(d.file_name)}</strong>
+        <div class="small">${escapeHTML(d.uploaded_at)}</div>
       </div>
       <div>
-        <button class="light" onclick="downloadDocument('${safe(d.file_path)}')">Download</button>
-        <button class="danger" onclick="deleteDocument(${Number(d.id)},'${safe(d.file_path)}')">Delete</button>
+        <button class="light" onclick="downloadDocument('${escapeHTML(d.file_path)}')">Download</button>
+        <button class="danger" onclick="deleteDocument(${Number(d.id)},'${escapeHTML(d.file_path)}')">Delete</button>
       </div>
-    </div>`).join("");
+    </div>
+  `).join("");
 }
 
 async function uploadDocument(){
-  hideMessage();
-  const file=el("documentFile").files[0];
-  const candidateId=el("selectedCandidateId").value;
+  const file=$("documentFile").files[0];
+  const candidateId=$("selectedCandidateId").value;
+
   if(!file){
-    showMessage("Please select a document first.","err");
+    showMessage("Please select a file.","err");
     return;
   }
+
   if(file.size>50*1024*1024){
-    showMessage("File exceeds 50 MB limit.","err");
+    showMessage("Maximum file size is 50 MB.","err");
     return;
   }
+
   const {data:userData,error:userError}=await db.auth.getUser();
-  if(userError||!userData.user){
-    showMessage("Please login again.","err");
+
+  if(userError || !userData.user){
+    showMessage("Login session expired. Please login again.","err");
     return;
   }
 
@@ -393,7 +454,7 @@ async function uploadDocument(){
     .upload(path,file,{cacheControl:"3600",upsert:false});
 
   if(uploadError){
-    showMessage("Upload failed: "+uploadError.message,"err");
+    showMessage("UPLOAD ERROR:\n"+uploadError.message,"err");
     return;
   }
 
@@ -406,17 +467,17 @@ async function uploadDocument(){
 
   if(recordError){
     await db.storage.from(BUCKET).remove([path]);
-    showMessage("Document record failed: "+recordError.message,"err");
+    showMessage("DOCUMENT RECORD ERROR:\n"+recordError.message,"err");
     return;
   }
 
-  el("documentFile").value="";
+  $("documentFile").value="";
   await loadDocuments();
-  showMessage("Document uploaded successfully. Sending email notification...","warn");
 
-  // EMAIL NOTIFICATION FUNCTION CALL
+  showMessage("Document uploaded. Sending email notification...","warn");
+
   const {data:emailData,error:emailError}=await db.functions.invoke(
-    EMAIL_FUNCTION,
+    "notify-document-upload",
     {
       body:{
         candidateName:selectedCandidate?.name || "Candidate",
@@ -427,36 +488,31 @@ async function uploadDocument(){
   );
 
   if(emailError){
-    showMessage(
-      "Document uploaded successfully, but email notification failed: "+emailError.message,
-      "warn"
-    );
-    console.error("Email notification error:",emailError);
+    showMessage("Document uploaded, but EMAIL ERROR:\n"+emailError.message,"warn");
+    console.error("Email error:",emailError);
     return;
   }
 
-  if(emailData && emailData.success){
+  if(emailData?.success){
     showMessage("Document uploaded successfully. Email notification accepted by Resend.");
   }else{
-    showMessage(
-      "Document uploaded, but notification response: "+
-      (emailData?.error || "Please check Edge Function logs."),
-      "warn"
-    );
-    console.error("Email function response:",emailData);
+    showMessage("Document uploaded, but email notification failed:\n"+
+      JSON.stringify(emailData),"warn");
   }
 }
 
 async function downloadDocument(path){
   const {data,error}=await db.storage.from(BUCKET).download(path);
+
   if(error){
-    showMessage("Download failed: "+error.message,"err");
+    showMessage("DOWNLOAD ERROR:\n"+error.message,"err");
     return;
   }
+
   const url=URL.createObjectURL(data);
   const a=document.createElement("a");
   a.href=url;
-  a.download=path.split("/").pop()||"document";
+  a.download=path.split("/").pop() || "document";
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -465,19 +521,24 @@ async function downloadDocument(path){
 
 async function deleteDocument(id,path){
   if(!confirm("Delete this document?"))return;
+
   const {error:storageError}=await db.storage.from(BUCKET).remove([path]);
+
   if(storageError){
-    showMessage("File delete failed: "+storageError.message,"err");
+    showMessage("FILE DELETE ERROR:\n"+storageError.message,"err");
     return;
   }
+
   const {error:recordError}=await db.from("candidate_documents")
     .delete().eq("id",id);
+
   if(recordError){
-    showMessage("Database record delete failed: "+recordError.message,"err");
+    showMessage("RECORD DELETE ERROR:\n"+recordError.message,"err");
     return;
   }
-  showMessage("Document deleted successfully.");
-  loadDocuments();
+
+  showMessage("Document deleted.");
+  await loadDocuments();
 }
 </script>
 </body>
